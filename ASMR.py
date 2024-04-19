@@ -32,9 +32,8 @@ def Get_Title(given_link):
     title = soup.title.string
     print(title)
 
-
 # 处理对应链接的函数
-def Download_ASMR(given_link):
+def Download_ASMR(given_link,download_path1,download_path2):
     response = requests.get(given_link)
     soup = BeautifulSoup(response.text, "html.parser")
     title = soup.title.string
@@ -52,8 +51,6 @@ def Download_ASMR(given_link):
     if __name__ == "__main__":
         url1 = f"https://cdn.hentaiasmr.moe/asmr/RJ{rj_number}.mp3"
         url2 = f"https://cdn.hentaiasmr.moe/asmr4/RJ{rj_number}.mp3"
-        download_path1 = f"D:\\asmr\\"
-        download_path2 = f"D:\\asmr4\\"
         file_name = new_title
         download_with_idm(url1, file_name, download_path1)
         download_with_idm(url2, file_name, download_path2)
@@ -121,6 +118,8 @@ def get_dlg(title=None, hwnd=None):
     app = pywinauto.Application().connect(handle=hwnd)
     return app.window(handle=hwnd)
 def main():
+    download_path1 = f"D:\\asmr\\"
+    download_path2 = f"D:\\asmr4\\"
     tag_chart = []
     page_list = ["most-viewed", "popular", "latest", "random"]
     page_number = 0
@@ -184,7 +183,7 @@ def main():
         link = link.get('href')
         if pattern_ASMR.search(str(link)):
             # 以下是符合要求的链接，开始下载
-            Download_ASMR(link)
+            Download_ASMR(link,download_path1,download_path2)
 
     # IDM 确认
     Application(backend="uia").start(r"C:\Program Files (x86)\Internet Download Manager\IDMan.exe")

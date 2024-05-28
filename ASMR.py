@@ -6,9 +6,22 @@ import subprocess
 import win32gui
 from bs4 import BeautifulSoup
 from urllib.parse import unquote
-
 from pywinauto import Application
 
+def retry(times=5):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for i in range(times):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    print(f"Trying the {i+1} time")
+            print(f"Failed after {times} attempts")
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 # IDM下载函数
@@ -26,6 +39,7 @@ def download_with_idm(url, file_name, download_path):
 
 
 # 获取链接函数
+@retry
 def Get_Title(given_link):
     response = requests.get(given_link)
     soup = BeautifulSoup(response.text, "html.parser")
@@ -58,9 +72,10 @@ def Download_ASMR(given_link,download_path1,download_path2):
 
 # 提取tag
 def extract_text_from_url(url):
-    base_url = 'https://www.hentaiasmr.moe/asmr/tag/'
+    base_url = 'https://www.hentaiasmr.moe/tag/'
     if url.startswith(base_url):
-        encoded_text = url[len(base_url):-1]
+        encoded_text = url[len(base_url):]
+        # print(f"{encoded_text=}")
         decoded_text = unquote(encoded_text)
         return decoded_text
     else:
@@ -125,8 +140,9 @@ def main():
     page_number = 0
     now_url = ""
     url_tags = f'https://www.hentaiasmr.moe/tags/'
-    pattern_ASMR = re.compile(r'^https://www\.hentaiasmr\.moe/asmr/rj\d+', re.I)
+    pattern_ASMR = re.compile(r'^https://www\.hentaiasmr\.moe/rj\d+\.html', re.I)
     pattern_tag = re.compile(r"tag")
+    pattern_title = re.compile(r'\[[^\]]+\] .*')
     page_prompt = "请选择想要的页面.0:最多观看/1:近期热门/2:近期更新/3:随机/大于3:选择tag"
 
     # 选择页面
@@ -136,6 +152,7 @@ def main():
     elif int(selection) >= 4:
         # 以下为选择tag
         links = get_links(url_tags)
+        # print(f"{links=}")
         for link in links:
             link = link.get('href')
             if pattern_tag.search(str(link)):
@@ -145,7 +162,7 @@ def main():
         tag_chart = list(set(tag_chart))
         tag_chart.remove(None)
         tag_chart = sorted(tag_chart)
-        print(tag_chart)
+        # print(tag_chart)
         for i in range(round(len(tag_chart)/10)):
             print(tag_chart[10*i:10*i +10])
 
@@ -155,13 +172,20 @@ def main():
 
     page_number = get_selection("请选择要查看的页码")
     links = get_links(now_url)
-    # print(links)
+    # print(f"{links=}")
+    result = []
     for link in links:
-        link = link.get('href')
-        if pattern_ASMR.search(str(link)):
+        href = link.get('href')
+        text = link.get_text(strip=True)
+        text_match = pattern_title.search(text)
+        if text_match:
+            text = text_match.group(0)
+        result.append({'href': href, 'text': text})
+        # print(f"{result}")
+        if href and pattern_ASMR.search(href):
             # 以下是符合要求的链接：
             print("===================================")
-            Get_Title(link)
+            print(f"{href} {text}")
 
     # 判断是否继续
     while True:
